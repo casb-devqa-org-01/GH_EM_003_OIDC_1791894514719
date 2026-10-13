@@ -1,0 +1,21 @@
+name: OIDC Cloud Access Exchange
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  federate-cloud-access:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request OIDC Token from GitHub Provider
+        run: |
+          OIDC_TOKEN_RESPONSE=$(curl -sLS \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            -H "Accept: application/json; api-version=2.0" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
+          JWT=$(echo "$OIDC_TOKEN_RESPONSE" | jq -r '.value')
+          echo "JWT successfully minted from provider."
+          echo "$JWT" | jq -R 'split(".") | .[1] | @base64d | fromjson | {iss, sub, aud, repository, ref}'
